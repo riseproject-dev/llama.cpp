@@ -475,11 +475,36 @@ inline static void ggml_vec_mad_f16(const int n, ggml_fp16_t * GGML_RESTRICT y, 
             svst1_f16(pg, (__fp16 *)(y + np2), hy);
         }
 
-    #elif defined(__riscv_v_intrinsic)
-        // todo: RVV impl
-        // scalar
-        for (int i = 0; i < n; ++i) {
-            y[i] = GGML_CPU_FP32_TO_FP16(GGML_CPU_FP16_TO_FP32(y[i]) + GGML_CPU_FP16_TO_FP32(x[i])*v);
+    #elif defined(__riscv_v_intrinsic) && defined(__riscv_zvfh)
+        const ggml_fp16_t s = GGML_CPU_FP32_TO_FP16(v);
+        const _Float16 scale = *(const _Float16*)(&s);
+
+        // calculate step size
+        const int epr = __riscv_vsetvlmax_e16m2();
+        const int step = epr * 2;
+        const int np = (n & ~(step - 1));
+
+        // unroll by 2
+        for (int i = 0; i < np; i += step) {
+            vfloat16m2_t ax0 = __riscv_vle16_v_f16m2((const _Float16*)x + i, epr);
+            vfloat16m2_t ay0 = __riscv_vle16_v_f16m2((const _Float16*)y + i, epr);
+            ay0 = __riscv_vfmacc_vf_f16m2(ay0, scale, ax0, epr);
+            __riscv_vse16_v_f16m2((_Float16*)y + i, ay0, epr);
+
+            vfloat16m2_t ax1 = __riscv_vle16_v_f16m2((const _Float16*)x + i + epr, epr);
+            vfloat16m2_t ay1 = __riscv_vle16_v_f16m2((const _Float16*)y + i + epr, epr);
+            ay1 = __riscv_vfmacc_vf_f16m2(ay1, scale, ax1, epr);
+            __riscv_vse16_v_f16m2((_Float16*)y + i + epr, ay1, epr);
+        }
+
+        // leftovers
+        int vl;
+        for (int i = np; i < n; i += vl) {
+            vl = __riscv_vsetvl_e16m2(n - i);
+            vfloat16m2_t ax0 = __riscv_vle16_v_f16m2((const _Float16*)x + i , vl);
+            vfloat16m2_t ay0 = __riscv_vle16_v_f16m2((const _Float16*)y + i, vl);
+            ay0 = __riscv_vfmacc_vf_f16m2(ay0, scale, ax0, vl);
+            __riscv_vse16_v_f16m2((_Float16*)y + i, ay0, vl);
         }
     #else
         const int np = (n & ~(GGML_F16_STEP - 1));
@@ -725,11 +750,35 @@ inline static void ggml_vec_scale_f16(const int n, ggml_fp16_t * y, const float 
             svfloat16_t out = svmul_f16_m(pg, hy, vx);
             svst1_f16(pg, (__fp16 *)(y + np), out);
         }
-    #elif defined(__riscv_v_intrinsic)
-        // todo: RVV impl
-        // scalar
-        for (int i = 0; i < n; ++i) {
-            y[i] = GGML_CPU_FP32_TO_FP16(GGML_CPU_FP16_TO_FP32(y[i])*v);
+    #elif defined(__riscv_v_intrinsic) && defined(__riscv_zvfh)
+        const ggml_fp16_t s = GGML_CPU_FP32_TO_FP16(v);
+        const _Float16 scale = *(const _Float16*)(&s);
+
+        // calculate step size
+        const int epr = __riscv_vsetvlmax_e16m2();
+        const int step = epr * 2;
+        const int np = (n & ~(step - 1));
+
+        // unroll by 2
+        for (int i = 0; i < np; i += step) {
+            vfloat16m2_t ay0 = __riscv_vle16_v_f16m2((const _Float16*)y + i, epr);
+            ay0 = __riscv_vfmul_vf_f16m2(ay0, scale, epr);
+            __riscv_vse16_v_f16m2((_Float16*)y + i, ay0, epr);
+            __asm__ __volatile__ ("" ::: "memory");
+
+            vfloat16m2_t ay1 = __riscv_vle16_v_f16m2((const _Float16*)y + i + epr, epr);
+            ay1 = __riscv_vfmul_vf_f16m2(ay1, scale, epr);
+            __riscv_vse16_v_f16m2((_Float16*)y + i + epr, ay1, epr);
+            __asm__ __volatile__ ("" ::: "memory");
+        }
+
+        // leftovers
+        int vl;
+        for (int i = np; i < n; i += vl) {
+            vl = __riscv_vsetvl_e16m2(n - i);
+            vfloat16m2_t ay0 = __riscv_vle16_v_f16m2((const _Float16*)y + i, vl);
+            ay0 = __riscv_vfmul_vf_f16m2(ay0, scale, vl);
+            __riscv_vse16_v_f16m2((_Float16*)y + i, ay0, vl);
         }
     #else
         const int np = (n & ~(GGML_F16_STEP - 1));
