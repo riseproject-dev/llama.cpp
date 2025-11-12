@@ -67,19 +67,30 @@
     GGML_ABORT("CANN error");
 }
 
+// Thread-local variable to record the current device of this thread.
+thread_local int g_current_cann_device = -1;
+
 /**
- * @brief Sets the device to be used by CANN.
+ * @brief Set the CANN device to be used.
  *
- * @param device The device ID to set.
+ * @param device The target device ID to set.
  */
 void ggml_cann_set_device(const int32_t device) {
-    int current_device = -1;
-    aclrtGetDevice(&current_device);
+    // int current_device = -1;
+    // Note: In some CANN versions, if no device has been set yet,
+    //       aclrtGetDevice(&current_device) may return 0 by default.
+    // aclrtGetDevice(&current_device);
 
-    if (device == current_device) {
+    // If the current device is already the target one, no need to switch.
+    if (device == g_current_cann_device) {
         return;
     }
+
+    // Switch to the new device.
     ACL_CHECK(aclrtSetDevice(device));
+
+    // Update the global device record.
+    g_current_cann_device = device;
 }
 
 /**
@@ -1766,6 +1777,9 @@ static bool ggml_cann_compute_forward(ggml_backend_cann_context & ctx, struct gg
         case GGML_OP_GROUP_NORM:
             ggml_cann_group_norm(ctx, dst);
             break;
+        case GGML_OP_L2_NORM:
+            ggml_cann_l2_norm(ctx, dst);
+            break;
         case GGML_OP_CONCAT:
             ggml_cann_concat(ctx, dst);
             break;
@@ -2504,6 +2518,7 @@ static bool ggml_backend_cann_supports_op(ggml_backend_dev_t dev, const ggml_ten
                 // value of paddingW should be at most half of kernelW
                 return (p0 <= (k0 / 2)) && (p1 <= (k1 / 2));
             }
+        case GGML_OP_L2_NORM:
         case GGML_OP_DUP:
         case GGML_OP_SUM:
         case GGML_OP_IM2COL:
