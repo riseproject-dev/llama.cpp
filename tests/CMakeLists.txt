@@ -212,6 +212,34 @@ if (NOT GGML_BACKEND_DL)
     llama_build_and_test(test-quantize-fns.cpp)
     llama_build_and_test(test-quantize-perf.cpp)
     llama_build_and_test(test-rope.cpp)
+    llama_build_and_test(test-float-fns.cpp)
+    llama_build_and_test(test-float-perf.cpp)
+    target_include_directories(
+            test-float-fns PRIVATE
+            ${CMAKE_SOURCE_DIR}/ggml/src/ggml-cpu
+            ${CMAKE_SOURCE_DIR}/ggml/src
+    )
+    target_include_directories(
+            test-float-perf PRIVATE
+            ${CMAKE_SOURCE_DIR}/ggml/src/ggml-cpu
+            ${CMAKE_SOURCE_DIR}/ggml/src
+    )
+    target_compile_options(
+            test-float-perf PRIVATE
+            ${GLOBAL_GGML_CPU_ARCH_FLAGS}
+    )
+    target_compile_definitions(
+            test-float-perf PRIVATE
+            ${GLOBAL_GGML_CPU_ARCH_DEFINITIONS}
+    )
+    target_compile_options(
+            test-float-fns PRIVATE
+            ${GLOBAL_GGML_CPU_ARCH_FLAGS}
+    )
+    target_compile_definitions(
+            test-float-fns PRIVATE
+            ${GLOBAL_GGML_CPU_ARCH_DEFINITIONS}
+    )
 endif()
 
 # libmtmd
