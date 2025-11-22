@@ -529,6 +529,11 @@ int64_t ggml_time_us(void) {
     QueryPerformanceCounter(&t);
     return ((t.QuadPart-timer_start) * 1000000) / timer_freq;
 }
+int64_t ggml_time_ns(void) {
+    LARGE_INTEGER t;
+    QueryPerformanceCounter(&t);
+    return ((t.QuadPart-timer_start) * 1000000000) / timer_freq;
+}
 #else
 void ggml_time_init(void) {}
 int64_t ggml_time_ms(void) {
@@ -541,6 +546,11 @@ int64_t ggml_time_us(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (int64_t)ts.tv_sec*1000000 + (int64_t)ts.tv_nsec/1000;
+}
+int64_t ggml_time_ns(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (int64_t)ts.tv_sec*1000000000 + (int64_t)ts.tv_nsec;
 }
 #endif
 
