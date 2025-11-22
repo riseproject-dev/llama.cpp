@@ -646,6 +646,9 @@ function(ggml_add_cpu_backend_variant_impl tag_name)
     target_sources(${GGML_CPU_NAME} PRIVATE ${GGML_CPU_SOURCES})
     target_compile_options(${GGML_CPU_NAME} PRIVATE ${ARCH_FLAGS})
     target_compile_definitions(${GGML_CPU_NAME} PRIVATE ${ARCH_DEFINITIONS})
+    #Exporting the arch flags and options to access them in tests/CMakelists.txt
+    set(GLOBAL_GGML_CPU_ARCH_FLAGS "${ARCH_FLAGS}" CACHE INTERNAL "Compiler flags for the default GGML CPU backend." FORCE)
+    set(GLOBAL_GGML_CPU_ARCH_DEFINITIONS "${ARCH_DEFINITIONS}" CACHE INTERNAL "Compiler definitions for the default GGML CPU backend." FORCE)
 
     if (EMSCRIPTEN)
         set_target_properties(${GGML_CPU_NAME} PROPERTIES COMPILE_FLAGS "-msimd128")
