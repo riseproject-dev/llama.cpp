@@ -73,6 +73,8 @@
 // repack.cpp
 #define ggml_quantize_mat_q8_K_4x4_generic ggml_quantize_mat_q8_K_4x4
 #define ggml_quantize_mat_q8_K_4x8_generic ggml_quantize_mat_q8_K_4x8
+#define ggml_repack_mat_f16_7x1_generic ggml_repack_mat_f16_7x1
+#define ggml_repack_mat_f32_7x1_generic ggml_repack_mat_f32_7x1
 #define ggml_gemv_iq4_nl_8x8_q8_0_generic ggml_gemv_iq4_nl_8x8_q8_0
 #define ggml_gemv_q2_K_8x8_q8_K_generic ggml_gemv_q2_K_8x8_q8_K
 #define ggml_gemv_f16_1x16_f16_generic ggml_gemv_f16_1x16_f16
