@@ -319,7 +319,7 @@ static void validate_mad_f16(const int                           n,
     }
 }
 
-static void validate_dot_unroll(const int n, const int xs, void * xv, const std::vector<ggml_fp16_t> & y, TestStats & stats) {
+static void validate_dot_unroll(const int n, const int xs, void * xv, std::vector<ggml_fp16_t> & y, TestStats & stats) {
     float s_ref[GGML_VEC_DOT_UNROLL];
     float s_opt[GGML_VEC_DOT_UNROLL];
 
