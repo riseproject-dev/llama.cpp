@@ -262,7 +262,7 @@ struct TestStats {
     }
 };
 
-static void validate_dot_fp16(size_t n, std::vector<ggml_fp16_t> & x, std::vector<ggml_fp16_t> & y, TestStats & stats) {
+static void validate_dot_fp16(int n, std::vector<ggml_fp16_t> & x, std::vector<ggml_fp16_t> & y, TestStats & stats) {
     float s_ref = 0.0f;
     float s_opt = 0.0f;
 
@@ -275,7 +275,7 @@ static void validate_dot_fp16(size_t n, std::vector<ggml_fp16_t> & x, std::vecto
     }
 }
 
-static void validate_dot_bf16(size_t n, std::vector<ggml_bf16_t> & x, std::vector<ggml_bf16_t> & y, TestStats & stats) {
+static void validate_dot_bf16(int n, std::vector<ggml_bf16_t> & x, std::vector<ggml_bf16_t> & y, TestStats & stats) {
     float s_ref = 0.0f;
     float s_opt = 0.0f;
 
@@ -289,12 +289,12 @@ static void validate_dot_bf16(size_t n, std::vector<ggml_bf16_t> & x, std::vecto
 }
 
 // SCALE
-static void validate_scale_f16(size_t n, const std::vector<ggml_fp16_t> & y_in, float v, TestStats & stats) {
+static void validate_scale_f16(const int n, std::vector<ggml_fp16_t> & y_in, const float v, TestStats & stats) {
     std::vector<ggml_fp16_t> y_ref = y_in;
     std::vector<ggml_fp16_t> y_opt = y_in;
 
-    ggml_vec_scale_f16_reference((int) n, y_ref.data(), v);
-    ggml_vec_scale_f16((int) n, y_opt.data(), v);
+    ggml_vec_scale_f16_reference(n, y_ref.data(), v);
+    ggml_vec_scale_f16(n, y_opt.data(), v);
 
     stats.total_tests++;
     if (!check_error(n, y_ref.data(), y_opt.data(), "ggml_vec_scale_f16", SCALE_F16_ERROR_THRESHOLD)) {
@@ -302,16 +302,16 @@ static void validate_scale_f16(size_t n, const std::vector<ggml_fp16_t> & y_in, 
     }
 }
 
-static void validate_mad_f16(size_t                           n,
-                             const std::vector<ggml_fp16_t> & y_in,
+static void validate_mad_f16(const int                           n,
+                             std::vector<ggml_fp16_t> & y_in,
                              const std::vector<ggml_fp16_t> & x,
-                             float                            v,
+                             const float                            v,
                              TestStats &                      stats) {
     std::vector<ggml_fp16_t> y_ref = y_in;
     std::vector<ggml_fp16_t> y_opt = y_in;
 
-    ggml_vec_mad_f16_reference((int) n, y_ref.data(), x.data(), v);
-    ggml_vec_mad_f16((int) n, y_opt.data(), x.data(), v);
+    ggml_vec_mad_f16_reference(n, y_ref.data(), x.data(), v);
+    ggml_vec_mad_f16(n, y_opt.data(), x.data(), v);
 
     stats.total_tests++;
     if (!check_error(n, y_ref.data(), y_opt.data(), "ggml_vec_mad_f16", MAD_F16_ERROR_THRESHOLD)) {
@@ -319,12 +319,12 @@ static void validate_mad_f16(size_t                           n,
     }
 }
 
-static void validate_dot_unroll(size_t n, int xs, void * xv, const std::vector<ggml_fp16_t> & y, TestStats & stats) {
+static void validate_dot_unroll(const int n, const int xs, void * xv, const std::vector<ggml_fp16_t> & y, TestStats & stats) {
     float s_ref[GGML_VEC_DOT_UNROLL];
     float s_opt[GGML_VEC_DOT_UNROLL];
 
-    ggml_vec_dot_f16_unroll_reference((int) n, xs, s_ref, xv, (ggml_fp16_t *) y.data());
-    ggml_vec_dot_f16_unroll((int) n, xs, s_opt, xv, (ggml_fp16_t *) y.data());
+    ggml_vec_dot_f16_unroll_reference(n, xs, s_ref, xv, (ggml_fp16_t *) y.data());
+    ggml_vec_dot_f16_unroll(n, xs, s_opt, xv, (ggml_fp16_t *) y.data());
 
     stats.total_tests++;
     if (!check_error(GGML_VEC_DOT_UNROLL, s_ref, s_opt, "ggml_vec_dot_f16_unroll", DOT_F16_UNROLL_THRESHOLD)) {
@@ -332,7 +332,7 @@ static void validate_dot_unroll(size_t n, int xs, void * xv, const std::vector<g
     }
 }
 
-static void validate_conversion_bf16(size_t n, const std::vector<ggml_bf16_t> & x, TestStats & stats) {
+static void validate_conversion_bf16(int n, const std::vector<ggml_bf16_t> & x, TestStats & stats) {
     std::vector<float> y_ref(n);
     std::vector<float> y_opt(n);
 
@@ -346,13 +346,13 @@ static void validate_conversion_bf16(size_t n, const std::vector<ggml_bf16_t> & 
     }
 }
 
-static void validate_conversion_fp16(size_t n, const std::vector<ggml_fp16_t> & x, TestStats & stats) {
+static void validate_conversion_fp16(int64_t n, const std::vector<ggml_fp16_t> & x, TestStats & stats) {
     std::vector<float> y_ref(n);
     std::vector<float> y_opt(n);
 
-    ggml_cpu_fp16_to_fp32_reference(x.data(), y_ref.data(), (int64_t) n);
+    ggml_cpu_fp16_to_fp32_reference(x.data(), y_ref.data(), n);
 
-    ggml_cpu_fp16_to_fp32(x.data(), y_opt.data(), (int64_t) n);
+    ggml_cpu_fp16_to_fp32(x.data(), y_opt.data(), n);
 
     stats.total_tests++;
     if (!check_error(n, y_ref.data(), y_opt.data(), "ggml_cpu_fp16_to_fp32", CPU_FP16_TO_FP32_THRESHOLD)) {
@@ -360,12 +360,12 @@ static void validate_conversion_fp16(size_t n, const std::vector<ggml_fp16_t> & 
     }
 }
 
-static void validate_silu(size_t n, const std::vector<float> & x, TestStats & stats) {
+static void validate_silu(const int n, const std::vector<float> & x, TestStats & stats) {
     std::vector<float> y_ref(n);
     std::vector<float> y_opt(n);
 
-    ggml_vec_silu_f32_reference((int) n, y_ref.data(), x.data());
-    ggml_vec_silu_f32((int) n, y_opt.data(), x.data());
+    ggml_vec_silu_f32_reference(n, y_ref.data(), x.data());
+    ggml_vec_silu_f32(n, y_opt.data(), x.data());
 
     stats.total_tests++;
     if (!check_error(n, y_ref.data(), y_opt.data(), "ggml_vec_silu_f32", SILU_F32_THRESHOLD)) {
